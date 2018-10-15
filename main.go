@@ -3,52 +3,89 @@ package main
 import (
 	"fmt"
 	"github.com/Syfaro/telegram-bot-api"
+	"github.com/gorilla/mux"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 )
 
+type Config struct {
+	KEY  string
+	HOST string
+}
 
-const CHAT_ID = 0
-var bot, err = tgbotapi.NewBotAPI("")
+func loadConfing() Config {
+	config := Config{}
+	data, err := ioutil.ReadFile("./config.yaml")
 
+	if err != nil {
+		log.Panic(err)
+	}
 
-func url_generator(bot *tgbotapi.BotAPI, updates tgbotapi.UpdatesChannel) {
+	err = yaml.Unmarshal(data, &config)
+
+	if err != nil {
+		log.Panic(err)
+	}
+	return config
+}
+
+func telegramBotResponding(bot *tgbotapi.BotAPI, updates tgbotapi.UpdatesChannel, config Config) {
 	for update := range updates {
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
 		if "/get_url" == update.Message.Text {
-			messageText := fmt.Sprintf("https://someurl.ru/%v/", update.Message.Chat.ID)
+			messageText := config.HOST + strconv.FormatInt(update.Message.Chat.ID, 10) + "/"
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, messageText)
 			bot.Send(msg)
 		}
 	}
 }
 
+func makeHandler(bot *tgbotapi.BotAPI) func(resp http.ResponseWriter, req *http.Request) {
+	return func(resp http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		body, err := ioutil.ReadAll(req.Body)
+		var message string
 
-func msgHandler(resp http.ResponseWriter, req *http.Request) {
-	message, _ := ioutil.ReadAll(req.Body)
-	telegramMessage := tgbotapi.NewMessage(CHAT_ID, string(message))
-	bot.Send(telegramMessage)
+		if err != nil {
+			message = err.Error()
+		} else {
+			message = string(body)
+		}
+		chatId, err := strconv.ParseInt(vars["chatId"], 10, 64)
+
+		if err == nil {
+			telegramMessage := tgbotapi.NewMessage(chatId, message)
+			bot.Send(telegramMessage)
+		}
+		fmt.Fprint(resp, "Ok")
+	}
 }
 
-
 func main() {
-	// подключаемся к боту с помощью токена
+	config := loadConfing()
+	var bot, err = tgbotapi.NewBotAPI(config.KEY)
 	if err != nil {
 		log.Panic(err)
 	}
+	router := mux.NewRouter()
 
-	bot.Debug = true
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	router.HandleFunc("/{chatId:\\d+}/", makeHandler(bot)).Methods("POST")
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, _ := bot.GetUpdatesChan(u)
+	updates, err := bot.GetUpdatesChan(u)
 
-	go url_generator(bot, updates)
-	http.HandleFunc("/", msgHandler)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	go telegramBotResponding(bot, updates, config)
+	http.Handle("/", router)
 	http.ListenAndServe(":8080", nil)
 }
