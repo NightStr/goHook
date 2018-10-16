@@ -1,1 +1,1 @@
-web: hooky
+web: app/hooky
