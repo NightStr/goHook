@@ -54,8 +54,10 @@ func makeHandler(bot *tgbotapi.BotAPI) func(resp http.ResponseWriter, req *http.
 					chunk = message
 					message = ""
 				}
-				telegramMessage := tgbotapi.NewMessage(chatId, chunk)
-				bot.Send(telegramMessage)
+				response, error := bot.Send(tgbotapi.NewMessage(chatId, chunk))
+				log.Print("send message")
+				log.Print(response)
+				log.Print(error)
 			}
 		}
 		fmt.Fprint(resp, "Ok")
