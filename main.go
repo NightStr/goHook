@@ -32,10 +32,12 @@ func telegramBotResponding(bot *tgbotapi.BotAPI, updates tgbotapi.UpdatesChannel
 
 func makeHandler(bot *tgbotapi.BotAPI) func(resp http.ResponseWriter, req *http.Request) {
 	return func(resp http.ResponseWriter, req *http.Request) {
+		var chunk string
+		chunkSize := 4096
+
 		vars := mux.Vars(req)
 		body, err := ioutil.ReadAll(req.Body)
 		var message string
-
 		if err != nil {
 			message = err.Error()
 		} else {
@@ -44,8 +46,17 @@ func makeHandler(bot *tgbotapi.BotAPI) func(resp http.ResponseWriter, req *http.
 		chatId, err := strconv.ParseInt(vars["chatId"], 10, 64)
 
 		if err == nil {
-			telegramMessage := tgbotapi.NewMessage(chatId, message)
-			bot.Send(telegramMessage)
+			for len(message) > 0 {
+				if len(message) > chunkSize {
+					chunk = message[0:chunkSize]
+					message = message[chunkSize:]
+				} else {
+					chunk = message
+					message = ""
+				}
+				telegramMessage := tgbotapi.NewMessage(chatId, chunk)
+				bot.Send(telegramMessage)
+			}
 		}
 		fmt.Fprint(resp, "Ok")
 	}
