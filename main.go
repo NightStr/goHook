@@ -14,6 +14,7 @@ import (
 type Config struct {
 	KEY  string
 	HOST string
+	PORT string
 }
 
 func loadConfing() Config {
@@ -87,5 +88,5 @@ func main() {
 
 	go telegramBotResponding(bot, updates, config)
 	http.Handle("/", router)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+config.PORT, nil)
 }
