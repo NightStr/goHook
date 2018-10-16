@@ -1,0 +1,7 @@
+{
+  "name": "Hooky",
+  "description": "Telegram bot for webhooks",
+  "keywords": [
+    "go"
+  ]
+}
