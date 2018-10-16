@@ -33,7 +33,7 @@ func telegramBotResponding(bot *tgbotapi.BotAPI, updates tgbotapi.UpdatesChannel
 func makeHandler(bot *tgbotapi.BotAPI) func(resp http.ResponseWriter, req *http.Request) {
 	return func(resp http.ResponseWriter, req *http.Request) {
 		var chunk string
-		chunkSize := 4096
+		chunkSize := 2000
 
 		vars := mux.Vars(req)
 		body, err := ioutil.ReadAll(req.Body)
