@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/Syfaro/telegram-bot-api"
 	"github.com/gorilla/mux"
 	"io/ioutil"
@@ -9,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 type Config struct {
@@ -30,11 +30,16 @@ func telegramBotResponding(bot *tgbotapi.BotAPI, updates tgbotapi.UpdatesChannel
 	}
 }
 
+func sendHookMessage(bot *tgbotapi.BotAPI, chatId int64, message string) {
+	time.Sleep(2 * time.Second)
+
+	chunkSize := 2000
+	message = message[:chunkSize]
+	bot.Send(tgbotapi.NewMessage(chatId, message))
+}
+
 func makeHandler(bot *tgbotapi.BotAPI) func(resp http.ResponseWriter, req *http.Request) {
 	return func(resp http.ResponseWriter, req *http.Request) {
-		var chunk string
-		chunkSize := 2000
-
 		vars := mux.Vars(req)
 		body, err := ioutil.ReadAll(req.Body)
 		var message string
@@ -46,21 +51,8 @@ func makeHandler(bot *tgbotapi.BotAPI) func(resp http.ResponseWriter, req *http.
 		chatId, err := strconv.ParseInt(vars["chatId"], 10, 64)
 
 		if err == nil {
-			for len(message) > 0 {
-				if len(message) > chunkSize {
-					chunk = message[0:chunkSize]
-					message = message[chunkSize:]
-				} else {
-					chunk = message
-					message = ""
-				}
-				response, error := bot.Send(tgbotapi.NewMessage(chatId, chunk))
-				log.Print("send message")
-				log.Print(response)
-				log.Print(error)
-			}
+			go sendHookMessage(bot, chatId, message)
 		}
-		fmt.Fprint(resp, "Ok")
 	}
 }
 

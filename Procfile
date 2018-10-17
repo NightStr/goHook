@@ -1,1 +1,1 @@
-web: app/hooky
+web: telegaBot
