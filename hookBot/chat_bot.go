@@ -23,7 +23,7 @@ type HookBot struct {
 	hostName string
 }
 
-func (bot HookBot) AddCommand(commandName string, handler func(message *tgbotapi.Message) (string, error)) {
+func (bot *HookBot) AddCommand(commandName string, handler func(message *tgbotapi.Message) (string, error)) {
 	bot.commands[commandName] = handler
 }
 
@@ -68,17 +68,18 @@ func (bot HookBot) telegramUpdate() {
 }
 
 func (bot HookBot) cutMessage(message string) string {
-	time.Sleep(2 * time.Second)
-
 	chunkSize := 2000
-	return message[:chunkSize]
+	if len(message) > chunkSize {
+		return message[:chunkSize]
+	}
+	return message
 }
 
-func (bot HookBot) sendMessage(chatId int64, message string) (tgbotapi.Message, error) {
+func (bot *HookBot) sendMessage(chatId int64, message string) (tgbotapi.Message, error) {
 	for _, mw := range bot.middleware {
 		message = mw(message)
 	}
-
+	time.Sleep(2 * time.Second)
 	msg := tgbotapi.NewMessage(chatId, message)
 	return bot.bot.Send(msg)
 }
@@ -88,7 +89,7 @@ func (bot HookBot) getUrl(message *tgbotapi.Message) (string, error) {
 	return msg, nil
 }
 
-func (bot HookBot) AddMiddleware(mw func(string) string) {
+func (bot *HookBot) AddMiddleware(mw func(string) string) {
 	bot.middleware = append(bot.middleware, mw)
 }
 
@@ -113,6 +114,7 @@ func NewChatBot(key string, httpPort string, hostName string, debug bool) (*Hook
 		httpPort:     httpPort,
 		hostName:     hostName,
 		commands:     make(map[string]func(message *tgbotapi.Message) (string, error)),
+		middleware:   []func(string) string{},
 	}
 	chatBot.AddMiddleware(chatBot.cutMessage)
 	chatBot.AddCommand("/get_url", chatBot.getUrl)
