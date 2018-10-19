@@ -1,81 +1,20 @@
 package main
 
 import (
-	"github.com/Syfaro/telegram-bot-api"
-	"github.com/gorilla/mux"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
-	"strconv"
-	"time"
+	"telegaBot/hookBot"
 )
 
-type Config struct {
-	KEY  string
-	HOST string
-	PORT string
-}
-
-func telegramBotResponding(bot *tgbotapi.BotAPI, updates tgbotapi.UpdatesChannel) {
-	for update := range updates {
-		if update.Message == nil { // ignore any non-Message Updates
-			continue
-		}
-		if "/get_url" == update.Message.Text {
-			messageText := os.Getenv("HOST_NAME") + strconv.FormatInt(update.Message.Chat.ID, 10) + "/"
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, messageText)
-			bot.Send(msg)
-		}
-	}
-}
-
-func sendHookMessage(bot *tgbotapi.BotAPI, chatId int64, message string) {
-	time.Sleep(2 * time.Second)
-
-	chunkSize := 2000
-	message = message[:chunkSize]
-	bot.Send(tgbotapi.NewMessage(chatId, message))
-}
-
-func makeHandler(bot *tgbotapi.BotAPI) func(resp http.ResponseWriter, req *http.Request) {
-	return func(resp http.ResponseWriter, req *http.Request) {
-		vars := mux.Vars(req)
-		body, err := ioutil.ReadAll(req.Body)
-		var message string
-		if err != nil {
-			message = err.Error()
-		} else {
-			message = string(body)
-		}
-		chatId, err := strconv.ParseInt(vars["chatId"], 10, 64)
-
-		if err == nil {
-			go sendHookMessage(bot, chatId, message)
-		}
-	}
-}
-
 func main() {
-	var bot, err = tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_KEY"))
-	bot.Debug = true
+	bot, err := hookBot.NewChatBot(
+		os.Getenv("TELEGRAM_KEY"),
+		os.Getenv("PORT"),
+		os.Getenv("HOST_NAME"),
+		os.Getenv("TELEGRAM_DEBUG") == "true",
+	)
 	if err != nil {
 		log.Panic(err)
 	}
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates, err := bot.GetUpdatesChan(u)
-	go telegramBotResponding(bot, updates)
-
-	router := mux.NewRouter()
-	router.HandleFunc("/{chatId:\\d+}/", makeHandler(bot)).Methods("POST")
-
-	if err != nil {
-		log.Panic(err)
-	}
-	port := os.Getenv("PORT")
-
-	http.Handle("/", router)
-	http.ListenAndServe(":"+port, nil)
+	bot.Start()
 }
