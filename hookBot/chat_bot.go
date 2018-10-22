@@ -67,14 +67,6 @@ func (bot HookBot) telegramUpdate() {
 	}
 }
 
-func (bot HookBot) cutMessage(message string) string {
-	chunkSize := 2000
-	if len(message) > chunkSize {
-		return message[:chunkSize]
-	}
-	return message
-}
-
 func (bot *HookBot) sendMessage(chatId int64, message string) (tgbotapi.Message, error) {
 	for _, mw := range bot.middleware {
 		message = mw(message)
@@ -116,7 +108,6 @@ func NewChatBot(key string, httpPort string, hostName string, debug bool) (*Hook
 		commands:     make(map[string]func(message *tgbotapi.Message) (string, error)),
 		middleware:   []func(string) string{},
 	}
-	chatBot.AddMiddleware(chatBot.cutMessage)
 	chatBot.AddCommand("/get_url", chatBot.getUrl)
 
 	router := mux.NewRouter()

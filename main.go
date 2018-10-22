@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"telegaBot/hookBot"
+	"telegaBot/middleware"
 )
 
 func main() {
@@ -13,6 +14,7 @@ func main() {
 		os.Getenv("HOST_NAME"),
 		os.Getenv("TELEGRAM_DEBUG") == "true",
 	)
+	bot.AddMiddleware(middleware.CutMessage(2000))
 	if err != nil {
 		log.Panic(err)
 	}
