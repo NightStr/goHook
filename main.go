@@ -14,9 +14,10 @@ func main() {
 		os.Getenv("HOST_NAME"),
 		os.Getenv("TELEGRAM_DEBUG") == "true",
 	)
-	bot.AddMiddleware(middleware.CutMessage(2000))
 	if err != nil {
 		log.Panic(err)
 	}
+	bot.AddMiddleware(middleware.SentryFormatter)
+	bot.AddMiddleware(middleware.CutMessage(2000))
 	bot.Start()
 }

@@ -27,7 +27,7 @@ func (bot *HookBot) AddCommand(commandName string, handler func(message *tgbotap
 	bot.commands[commandName] = handler
 }
 
-func (bot HookBot) postHandler(resp http.ResponseWriter, req *http.Request) {
+func (bot *HookBot) postHandler(resp http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	body, err := ioutil.ReadAll(req.Body)
 	var message string
@@ -85,7 +85,7 @@ func (bot *HookBot) AddMiddleware(mw func(string) string) {
 	bot.middleware = append(bot.middleware, mw)
 }
 
-func (bot HookBot) Start() {
+func (bot *HookBot) Start() {
 	go bot.telegramUpdate()
 	http.ListenAndServe(":"+bot.httpPort, nil)
 }
