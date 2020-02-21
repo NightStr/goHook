@@ -1,10 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"github.com/NightStr/goHook/hookBot"
+	"github.com/NightStr/goHook/middleware"
 	"log"
 	"os"
-	"telegaBot/hookBot"
-	"telegaBot/middleware"
 )
 
 func main() {
@@ -19,5 +20,6 @@ func main() {
 	}
 	bot.AddMiddleware(middleware.SentryFormatter)
 	bot.AddMiddleware(middleware.CutMessage(2000))
+	fmt.Printf("Start bot")
 	bot.Start()
 }

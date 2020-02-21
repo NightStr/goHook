@@ -87,16 +87,25 @@ func (bot *HookBot) AddMiddleware(mw func(string) string) {
 
 func (bot *HookBot) Start() {
 	go bot.telegramUpdate()
-	http.ListenAndServe(":"+bot.httpPort, nil)
+	var err = http.ListenAndServe(":"+bot.httpPort, nil)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func NewChatBot(key string, httpPort string, hostName string, debug bool) (*HookBot, error) {
 	var bot, err = tgbotapi.NewBotAPI(key)
+	if err != nil {
+		panic("Can't create a bot. Check a bot's key")
+	}
 	bot.Debug = debug
 	updateConfig := tgbotapi.NewUpdate(0)
 	updateConfig.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(updateConfig)
+	if err != nil {
+		panic(err)
+	}
 
 	chatBot := HookBot{
 		bot:          bot,
@@ -113,14 +122,6 @@ func NewChatBot(key string, httpPort string, hostName string, debug bool) (*Hook
 	router := mux.NewRouter()
 	router.HandleFunc("/{chatId:\\d+}/", chatBot.postHandler).Methods("POST")
 
-	if err != nil {
-		log.Panic(err)
-	}
-
 	http.Handle("/", router)
-	if err != nil {
-		return nil, err
-	} else {
-		return &chatBot, nil
-	}
+	return &chatBot, nil
 }

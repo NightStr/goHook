@@ -9,5 +9,11 @@ $(DOCKER_CMD): clean
 clean:
 	rm -rf $(DOCKER_BUILD)
 
+build:
+	export GOPATH=$HOME/go/
+	go get -v  github.com/NightStr/goHook/hookBot
+	go get -v github.com/NightStr/goHook/middleware
+	go build -o bin/hooky
+
 heroku: $(DOCKER_CMD)
 	heroku container:push web
