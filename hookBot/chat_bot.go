@@ -96,7 +96,7 @@ func (bot *HookBot) Start() {
 func NewChatBot(key string, httpPort string, hostName string, debug bool) (*HookBot, error) {
 	var bot, err = tgbotapi.NewBotAPI(key)
 	if err != nil {
-		panic("Can't create a bot. Check a bot's key")
+		panic(err)
 	}
 	bot.Debug = debug
 	updateConfig := tgbotapi.NewUpdate(0)
